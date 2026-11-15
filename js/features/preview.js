@@ -1,4 +1,3 @@
-// 预览页：渲染、外观、缩放、全屏、截屏
 import { project, getActiveFile } from '../core/store.js';
 import { syncActiveFile } from '../editor/editor-state.js';
 import { buildPreviewDocForProject } from './preview-builder.js';
@@ -13,20 +12,35 @@ const fullscreenExit = document.getElementById('fullscreenExit');
 
 let currentAppearance = 'white';
 let currentZoom = 1;
+let lastPreviewKey = null; // 👈 记录上次渲染的代码指纹
 
-function renderPreview() {
+function renderPreview(force = false) {
   if (!project) return;
   syncActiveFile();
   const f = getActiveFile();
   if (!f) { showToast('没有可预览的文件'); return; }
+
+  // 👇 生成代码指纹：项目ID + 文件ID + 代码内容
+  const previewKey = project.id + '_' + f.id + '_' + f.content;
+
+  // 👇 如果代码没变且不是强制刷新，直接返回，保留 iframe 状态
+  if (!force && lastPreviewKey === previewKey) {
+    return;
+  }
+
   previewTitle.textContent = f.name;
   previewFrame.srcdoc = buildPreviewDocForProject(project, f.name, f.content);
-  previewFrame.onload = () => { applyAppearance(currentAppearance); applyZoom(currentZoom); };
+  lastPreviewKey = previewKey; // 更新指纹
+
+  previewFrame.onload = () => { 
+    applyAppearance(currentAppearance); 
+    applyZoom(currentZoom); 
+  };
 }
 
 export function enterPreview() {
   if (!project) return;
-  renderPreview();
+  renderPreview(false); // 不强制刷新
   pagePreview.classList.remove('fullscreen');
   showPage('preview');
 }
@@ -53,7 +67,10 @@ function applyZoom(v) {
 function toggleFullscreen() { pagePreview.classList.toggle('fullscreen'); }
 fullscreenExit.addEventListener('click', () => { pagePreview.classList.remove('fullscreen'); });
 
-document.getElementById('previewReloadBtn').addEventListener('click', renderPreview);
+// 👇 点击刷新按钮时，强制传 true 重新渲染
+document.getElementById('previewReloadBtn').addEventListener('click', () => {
+  renderPreview(true);
+});
 
 async function capturePreview(mode) {
   if (typeof html2canvas === 'undefined') { alert('截屏库未加载'); return; }
