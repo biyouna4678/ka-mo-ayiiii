@@ -20,35 +20,41 @@
 <link rel="stylesheet" href="./css/menus.css">
 <link rel="stylesheet" href="./css/dialogs.css">
 
-<!-- ================= 详细报错捕获 ================= -->
+<!-- ================= 详细报错捕获 (开发友好版) ================= -->
 <script>
-  // 移动端没有控制台，用弹窗直接查看错误
-  window.addEventListener('error', function(e) {
-    // 资源加载错误（如图片、JS文件 404 或网络超时）
-    if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK' || e.target.tagName === 'IMG')) {
-      var src = e.target.src || e.target.href;
-      // 忽略一些不重要的图片报错
-      if (src && src.indexOf('http') === 0 && src.indexOf(location.hostname) === -1) return;
-      
-      alert('❌ 资源加载失败:\n' + src + '\n\n可能原因：\n1. 文件路径拼写错误（区分大小写）\n2. 文件没有上传到 GitHub\n3. 网络无法访问该 CDN');
-      return;
+  (function() {
+    const isDebug = location.search.indexOf('debug') > -1;
+    
+    function showErr(msg) {
+      if (isDebug) {
+        alert(msg); // 带 ?debug 参数时，使用原生弹窗（方便手机排查）
+      } else {
+        console.error(msg); // 正常使用时只打印到控制台
+        // 如果页面有 toast，可以给个轻提示
+        if (window.showToast) window.showToast('发生了一点错误', 3000);
+      }
     }
-    // 普通的 JS 运行错误
-    alert('❌ 运行错误:\n' + e.message + '\n\n位置: ' + e.filename + ':' + e.lineno);
-  }, true); // 开启捕获阶段，才能捕获资源加载失败
 
-  // Promise 内部报错（ES Module 加载失败经常走这里）
-  window.addEventListener('unhandledrejection', function(e) {
-    var msg = e.reason;
-    if (msg instanceof Error) {
-      alert('❌ Promise 异常 (常见于模块加载):\n' + msg.message + '\n\n检查是否路径拼写错误或网络原因。');
-    } else {
-      alert('❌ 异步异常:\n' + msg);
-    }
-  });
+    window.addEventListener('error', function(e) {
+      if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK' || e.target.tagName === 'IMG')) {
+        var src = e.target.src || e.target.href;
+        if (src && src.indexOf('http') === 0 && src.indexOf(location.hostname) === -1) return;
+        showErr('❌ 资源加载失败:\n' + src);
+        return;
+      }
+      showErr('❌ 运行错误:\n' + e.message + '\n位置: ' + e.filename + ':' + e.lineno);
+    }, true);
+
+    window.addEventListener('unhandledrejection', function(e) {
+      var msg = e.reason;
+      if (msg instanceof Error) showErr('❌ Promise 异常:\n' + msg.message);
+      else showErr('❌ 异步异常:\n' + msg);
+    });
+  })();
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<!-- 👇 这里替换成了 html-to-image 库，用于生成截图 -->
+<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
 </head>
 <body>
 
