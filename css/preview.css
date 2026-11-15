@@ -1,0 +1,39 @@
+/* 预览页 */
+.preview-page { background: #ffffff; z-index: 100; }
+.preview-header {
+  display: flex; align-items: center;
+  padding: calc(env(safe-area-inset-top) + 6px) 8px 6px;
+  background: #f5f5f7; border-bottom: 0.5px solid #e0e0e0;
+  flex-shrink: 0;
+}
+.preview-title {
+  flex: 1; text-align: center;
+  font-size: 15px; font-weight: 500; color: #000;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 0 8px;
+}
+.preview-page.fullscreen .preview-header { display: none; }
+.preview-body {
+  flex: 1 1 auto; min-height: 0;
+  overflow: auto; -webkit-overflow-scrolling: touch;
+  background: #e8e8ed;
+}
+#previewFrame {
+  display: block; width: 100%; height: 100%;
+  border: 0; background: #ffffff;
+  transition: zoom 0.15s ease;
+}
+.fullscreen-exit {
+  position: fixed; right: 16px;
+  top: calc(env(safe-area-inset-top) + 16px);
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff; border: none;
+  display: none; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 220;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.fullscreen-exit svg { width: 20px; height: 20px; }
+.preview-page.fullscreen .fullscreen-exit { display: flex; }
