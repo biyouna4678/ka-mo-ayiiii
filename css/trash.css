@@ -1,0 +1,150 @@
+/* 回收站 */
+.page-trash { background: #FFEDE9; }
+.trash-header {
+  display: flex; align-items: center;
+  padding: calc(env(safe-area-inset-top) + 8px) 8px 8px;
+  background: #FFEDE9;
+  flex-shrink: 0;
+}
+.trash-header .back-btn {
+  color: #007AFF; font-size: 17px;
+  background: transparent; border: none;
+  padding: 4px 8px; cursor: pointer;
+  display: flex; align-items: center; gap: 4px;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.trash-header .back-btn svg { width: 20px; height: 20px; }
+.trash-title {
+  flex: 1; text-align: center;
+  font-size: 17px; font-weight: 700; color: #000;
+  margin-left: 60px;
+}
+.trash-select-btn {
+  background: transparent; border: none;
+  color: #FE592D; font-size: 17px;
+  padding: 4px 12px; cursor: pointer;
+  font-family: inherit;
+  min-width: 60px;
+  text-align: right;
+  -webkit-tap-highlight-color: transparent;
+}
+.trash-body {
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 0 16px;
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
+}
+.trash-list-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 12px 4px 14px;
+}
+.trash-list-header .label {
+  font-size: 22px; font-weight: 800; color: #1a1a1a;
+  letter-spacing: -0.3px;
+}
+.trash-count {
+  font-size: 13px; font-weight: 600;
+  color: #8E8E93;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 4px 10px;
+  border-radius: 999px;
+  min-width: 32px;
+  text-align: center;
+}
+.trash-list { display: flex; flex-direction: column; gap: 12px; }
+.trash-empty {
+  text-align: center;
+  color: #8E8E93;
+  font-size: 14px;
+  padding: 60px 20px;
+}
+.trash-card {
+  display: flex; align-items: center; gap: 14px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 14px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.12s ease;
+}
+.trash-card:active { transform: scale(0.99); }
+.trash-card.selected { background: #FFF1EC; }
+.trash-select-circle {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 2px solid #C7C7CC;
+  background: transparent;
+  flex-shrink: 0;
+  display: none;
+  align-items: center; justify-content: center;
+  transition: all 0.15s ease;
+}
+.select-mode .trash-select-circle { display: flex; }
+.trash-card.selected .trash-select-circle {
+  background: #FE592D;
+  border-color: #FE592D;
+}
+.trash-select-circle svg { width: 14px; height: 14px; color: #fff; opacity: 0; }
+.trash-card.selected .trash-select-circle svg { opacity: 1; }
+.trash-cover {
+  width: 60px; height: 60px;
+  border-radius: 14px;
+  background: #E8F0FE;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.trash-cover svg { width: 34px; height: 34px; color: #2B6EE0; }
+.trash-info { flex: 1; min-width: 0; }
+.trash-name {
+  font-size: 19px; font-weight: 700; color: #000;
+  line-height: 1.2;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding-right: 78px;
+}
+.trash-meta {
+  margin-top: 5px;
+  font-size: 14px; color: #8E8E93;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.trash-days {
+  position: absolute;
+  top: 14px; right: 14px;
+  font-size: 12px;
+  color: #8E8E93;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.trash-action-bar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  display: none;
+  gap: 8px;
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  background: rgba(255, 237, 233, 0.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 0.5px solid rgba(0, 0, 0, 0.08);
+  z-index: 50;
+}
+.trash-action-bar.show { display: flex; }
+.trash-action-btn {
+  flex: 1;
+  padding: 14px 0;
+  background: #ffffff;
+  color: #000;
+  border: none;
+  border-radius: 14px;
+  font-size: 15px; font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.trash-action-btn:active { background: #f0f0f0; }
+.trash-action-btn.danger { color: #FF3B30; }
+.trash-action-btn[disabled] { color: #C7C7CC; cursor: default; }
+.trash-action-btn[disabled]:active { background: #ffffff; }
