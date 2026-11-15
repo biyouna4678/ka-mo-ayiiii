@@ -4,6 +4,11 @@ import { ICON_FOLDER_BLUE, CHECK_WHITE } from '../ui/icons.js';
 import { showConfirm } from '../ui/overlays.js';
 import { showPage } from '../ui/pages.js';
 
+// 👇 加上这个兜底导出，防止旧版 app.js 报错
+export function initTrash() {
+  // 初始化逻辑已经在模块底部执行，这里留空即可
+}
+
 const trashList = document.getElementById('trashList');
 const trashCount = document.getElementById('trashCount');
 const trashBody = document.getElementById('trashBody');
