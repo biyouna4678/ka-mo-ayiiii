@@ -1,4 +1,4 @@
-const CACHE = 'codeview-v2';
+const CACHE = 'codeview-v3';
 const SHELL = [
   './',
   './index.html',
