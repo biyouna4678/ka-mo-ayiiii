@@ -1,29 +1,34 @@
 import {
-  projects, createFile, uniqueNameIn, currentProjectId
+  projects, createFile, uniqueNameIn, currentProjectId, saveNow
 } from '../core/store.js';
 import {
-  showToast, copyToClipboard, formatBytes, formatRelativeTime
+  showToast, copyToClipboard, formatBytes, formatRelativeTime, escapeHtmlText
 } from '../core/utils.js';
 import { loadActiveFileToEditor } from '../editor/editor-state.js';
 
 let deps = null;
 export function initFiles(d) { deps = d; }
 
+/* ============ 入口标记 ============ */
 export async function toggleEntryFile(projectId, fileId) {
   const p = projects.find(x => x.id === projectId);
   if (!p) return;
   const f = p.files.find(x => x.id === fileId);
   if (!f) return;
-  if (f.isEntry) f.isEntry = false;
-  else { p.files.forEach(x => x.isEntry = false); f.isEntry = true; }
+  if (f.isEntry) {
+    f.isEntry = false;
+  } else {
+    p.files.forEach(x => x.isEntry = false);
+    f.isEntry = true;
+  }
   f.updatedAt = Date.now();
   p.updatedAt = Date.now();
   deps.renderProjects();
-  const { saveNow } = await import('../core/store.js');
   await saveNow();
   showToast(f.isEntry ? '已设为入口' : '已取消入口');
 }
 
+/* ============ 复制文件 ============ */
 export async function duplicateFile(projectId, fileId) {
   const p = projects.find(x => x.id === projectId);
   if (!p) return;
@@ -34,12 +39,12 @@ export async function duplicateFile(projectId, fileId) {
   nf.updatedAt = Date.now();
   p.files.push(nf);
   p.updatedAt = Date.now();
-  const { saveNow } = await import('../core/store.js');
   await saveNow();
   deps.renderProjects();
   showToast('已复制为 ' + newName);
 }
 
+/* ============ 删除文件 ============ */
 export async function deleteFileFromProject(projectId, fileId) {
   const p = projects.find(x => x.id === projectId);
   if (!p) return;
@@ -55,11 +60,11 @@ export async function deleteFileFromProject(projectId, fileId) {
   }
   p.updatedAt = Date.now();
   deps.renderProjects();
-  const { saveNow } = await import('../core/store.js');
   await saveNow();
   showToast('已删除');
 }
 
+/* ============ 导出单个文件 ============ */
 export function exportFile(projectId, fileId) {
   const p = projects.find(x => x.id === projectId);
   if (!p) return;
@@ -68,12 +73,16 @@ export function exportFile(projectId, fileId) {
   const blob = new Blob([f.content], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = f.name;
-  document.body.appendChild(a); a.click(); a.remove();
+  a.href = url;
+  a.download = f.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
   showToast('已导出 ' + f.name);
 }
 
+/* ============ 复制文件内容 ============ */
 export async function copyFileContent(projectId, fileId) {
   const p = projects.find(x => x.id === projectId);
   if (!p) return;
@@ -83,6 +92,7 @@ export async function copyFileContent(projectId, fileId) {
   showToast('已复制文件内容');
 }
 
+/* ============ 文件信息面板 ============ */
 const infoSheet = document.getElementById('infoSheet');
 const infoGrid = document.getElementById('infoGrid');
 const infoTitle = document.getElementById('infoTitle');
@@ -107,17 +117,29 @@ export function showFileInfo(projectId, fileId) {
     ['是否入口文件', f.isEntry ? '是' : '否']
   ];
   rows.forEach(([k, v]) => {
-    const kEl = document.createElement('div'); kEl.className = 'k'; kEl.textContent = k;
-    const vEl = document.createElement('div'); vEl.className = 'v'; vEl.textContent = v;
-    infoGrid.appendChild(kEl); infoGrid.appendChild(vEl);
+    const kEl = document.createElement('div');
+    kEl.className = 'k';
+    kEl.textContent = k;
+    const vEl = document.createElement('div');
+    vEl.className = 'v';
+    vEl.textContent = v;
+    infoGrid.appendChild(kEl);
+    infoGrid.appendChild(vEl);
   });
   infoSheet.classList.add('show');
 }
 
-/* ============ 移动到 / 复制到 ============ */
+/* ============ 移动到 / 复制到 项目选择器 ============ */
 const projectPickerSheet = document.getElementById('projectPickerSheet');
 const projectPickerTitle = document.getElementById('projectPickerTitle');
 const projectPickerList = document.getElementById('projectPickerList');
+
+document.getElementById('projectPickerClose').addEventListener('click', () => {
+  projectPickerSheet.classList.remove('show');
+});
+projectPickerSheet.addEventListener('click', (e) => {
+  if (e.target === projectPickerSheet) projectPickerSheet.classList.remove('show');
+});
 
 export function openProjectPicker(mode, sourceProjectId, fileId) {
   const source = projects.find(x => x.id === sourceProjectId);
@@ -128,9 +150,11 @@ export function openProjectPicker(mode, sourceProjectId, fileId) {
     showToast('至少保留一个文件，无法移动');
     return;
   }
+
   const targets = projects.filter(p => !p.deletedAt && p.id !== sourceProjectId);
   projectPickerTitle.textContent = mode === 'move' ? '移动到' : '复制到';
   projectPickerList.innerHTML = '';
+
   if (!targets.length) {
     const empty = document.createElement('div');
     empty.style.cssText = 'padding: 40px 20px; text-align:center; color:#8E8E93; font-size:14px;';
@@ -141,7 +165,9 @@ export function openProjectPicker(mode, sourceProjectId, fileId) {
       const row = document.createElement('button');
       row.type = 'button';
       row.className = 'lang-item';
-      row.innerHTML = '<span>' + escapeHtmlText(t.name) + '</span><span class="lang-ext">' + t.files.length + ' 个文件</span>';
+      row.innerHTML =
+        '<span>' + escapeHtmlText(t.name) + '</span>' +
+        '<span class="lang-ext">' + t.files.length + ' 个文件</span>';
       row.addEventListener('click', async () => {
         projectPickerSheet.classList.remove('show');
         if (mode === 'move') await moveFileToProject(sourceProjectId, fileId, t.id);
@@ -153,21 +179,15 @@ export function openProjectPicker(mode, sourceProjectId, fileId) {
   projectPickerSheet.classList.add('show');
 }
 
-import { escapeHtmlText } from '../core/utils.js';
-
-document.getElementById('projectPickerClose').addEventListener('click', () => projectPickerSheet.classList.remove('show'));
-projectPickerSheet.addEventListener('click', (e) => {
-  if (e.target === projectPickerSheet) projectPickerSheet.classList.remove('show');
-});
-
+/* ============ 跨项目移动 ============ */
 async function moveFileToProject(srcId, fileId, dstId) {
-  const { saveNow } = await import('../core/store.js');
   const src = projects.find(p => p.id === srcId);
   const dst = projects.find(p => p.id === dstId);
   if (!src || !dst) return;
   if (src.files.length <= 1) { showToast('至少保留一个文件'); return; }
   const idx = src.files.findIndex(f => f.id === fileId);
   if (idx < 0) return;
+
   const file = src.files[idx];
   const wasEntry = file.isEntry;
 
@@ -192,18 +212,20 @@ async function moveFileToProject(srcId, fileId, dstId) {
   showToast('已移动到「' + dst.name + '」');
 }
 
+/* ============ 跨项目复制 ============ */
 async function copyFileToProject(srcId, fileId, dstId) {
-  const { saveNow } = await import('../core/store.js');
   const src = projects.find(p => p.id === srcId);
   const dst = projects.find(p => p.id === dstId);
   if (!src || !dst) return;
   const file = src.files.find(f => f.id === fileId);
   if (!file) return;
+
   const newFile = createFile(uniqueNameIn(dst, file.name), file.content, false);
   newFile.updatedAt = Date.now();
   dst.files.push(newFile);
   if (!dst.files.some(f => f.isEntry)) dst.files[0].isEntry = true;
   dst.updatedAt = Date.now();
+
   await saveNow();
   deps.renderProjects();
   showToast('已复制到「' + dst.name + '」');
