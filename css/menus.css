@@ -1,0 +1,140 @@
+/* 上下文菜单 + popup 菜单 */
+.ctx-mask {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.18);
+  display: none;
+  z-index: 900;
+}
+.ctx-mask.show { display: block; }
+.ctx-menu {
+  position: absolute;
+  min-width: 220px;
+  max-width: 82vw;
+  background: transparent;
+  animation: ctxPop 0.14s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  transform-origin: center top;
+}
+@keyframes ctxPop {
+  from { transform: scale(0.88); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.ctx-title {
+  background: rgba(246, 246, 246, 0.96);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border-radius: 14px;
+  padding: 10px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: #8E8E93;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.ctx-group {
+  background: rgba(250, 250, 250, 0.94);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.ctx-group + .ctx-group { margin-top: 8px; }
+.ctx-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 18px;
+  background: transparent;
+  border: none;
+  border-bottom: 0.5px solid rgba(60, 60, 67, 0.12);
+  font-size: 16px;
+  font-weight: 400;
+  color: #1a1a1a;
+  text-align: left;
+  cursor: pointer;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  letter-spacing: -0.2px;
+  -webkit-appearance: none;
+}
+.ctx-item:last-child { border-bottom: none; }
+.ctx-item:active { background: rgba(0, 0, 0, 0.06); }
+.ctx-item svg {
+  width: 21px; height: 21px;
+  flex-shrink: 0;
+  color: #1a1a1a;
+  stroke-width: 1.8;
+}
+.ctx-item.danger { color: #FF3B30; }
+.ctx-item.danger svg { color: #FF3B30; }
+
+.popup-mask {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.15);
+  display: none; z-index: 180;
+  justify-content: flex-end; align-items: flex-start;
+  padding: calc(env(safe-area-inset-top) + 56px) 10px 0 0;
+}
+.popup-mask.show { display: flex; }
+.popup-menu {
+  width: 250px; max-height: 72vh;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: transparent;
+  animation: menuPop 0.15s ease;
+  padding-bottom: 8px;
+}
+@keyframes menuPop {
+  from { transform: scale(0.94) translateY(-6px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+.menu-panel { display: flex; flex-direction: column; }
+.menu-panel[hidden] { display: none; }
+.menu-group {
+  background: rgba(246, 246, 246, 0.78);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border-radius: 14px; overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.menu-group + .menu-group { margin-top: 8px; }
+.menu-item {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; min-height: 46px;
+  padding: 0 16px;
+  background: transparent; border: none;
+  border-bottom: 0.5px solid rgba(60, 60, 67, 0.13);
+  font-size: 17px; font-weight: 400; color: #000;
+  cursor: pointer; text-align: left;
+  letter-spacing: -0.24px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  -webkit-appearance: none;
+}
+.menu-item:last-child { border-bottom: none; }
+.menu-item:active { background: rgba(0, 0, 0, 0.06); }
+.menu-item .label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu-item svg { width: 20px; height: 20px; flex-shrink: 0; color: #666; }
+.menu-item .chev { color: #B0B0B6; font-size: 16px; line-height: 1; flex-shrink: 0; }
+.menu-item .check {
+  width: 20px; flex-shrink: 0;
+  text-align: center; color: #FE592D;
+  font-weight: 600; font-size: 15px; line-height: 1;
+}
+.menu-item.selected .check::before { content: '✓'; }
+.menu-item[disabled] { color: #C7C7CC; cursor: default; }
+.menu-item[disabled] .chev { color: #C7C7CC; }
+.menu-item[disabled]:active { background: transparent; }
+.menu-item.menu-back { color: #000; }
+.menu-item.menu-back svg { color: #000; }
+.menu-section-label {
+  padding: 8px 16px 4px;
+  font-size: 12px; color: #888;
+  font-weight: 500; letter-spacing: 0.2px;
+  background: transparent;
+  border-bottom: 0.5px solid rgba(60, 60, 67, 0.13);
+}
+.menu-section-label:last-child { border-bottom: none; }
