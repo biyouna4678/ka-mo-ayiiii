@@ -5,7 +5,19 @@ html, body {
   background: #FFEDE9; overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   touch-action: manipulation;
+  /* 👇 禁止全局长按选中与系统菜单 */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
+
+/* 👇 特例：编辑器区域、输入框允许选中和原生长按菜单 */
+.cm-editor, .cm-content, input, textarea {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+}
+
 button { touch-action: manipulation; }
 .page { position: fixed; inset: 0; display: none; flex-direction: column; }
 .page.active { display: flex; }
