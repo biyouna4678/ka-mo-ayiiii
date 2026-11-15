@@ -9,6 +9,75 @@
 <meta name="apple-mobile-web-app-title" content="CodeView">
 <title>代码预览编辑器</title>
 
+<!-- ================= 移动端可视化错误捕获面板 ================= -->
+<style>
+  #__debug_overlay {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    max-height: 40vh; overflow-y: auto;
+    background: rgba(220, 38, 38, 0.95); color: #fff;
+    z-index: 999999; font-family: ui-monospace, monospace; font-size: 12px;
+    padding: 12px; display: none; padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.2);
+  }
+  #__debug_overlay .dbg-item {
+    margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.3);
+    word-break: break-all;
+  }
+  #__debug_overlay .dbg-title { font-weight: bold; color: #fca5a5; margin-bottom: 2px; }
+</style>
+<script>
+(function() {
+  // 创建错误展示面板
+  var errBox = document.createElement('div');
+  errBox.id = '__debug_overlay';
+  document.documentElement.appendChild(errBox);
+  
+  function showError(title, msg) {
+    errBox.style.display = 'block';
+    var item = document.createElement('div');
+    item.className = 'dbg-item';
+    item.innerHTML = '<div class="dbg-title">' + title + '</div>' + msg;
+    errBox.appendChild(item);
+  }
+
+  // 拦截 JS 运行错误
+  window.onerror = function(msg, url, line, col, error) {
+    if (msg === 'Script error.') {
+      showError('跨域脚本错误', '可能由于 CDN 被拦截或跨域问题导致。请检查网络。');
+    } else {
+      showError('运行错误', msg + '<br>位置: ' + (url || '未知').split('/').pop() + ' : 第 ' + line + ' 行');
+    }
+  };
+
+  // 拦截 Promise 异常（针对 ES Module 加载失败）
+  window.addEventListener('unhandledrejection', function(e) {
+    var reason = e.reason;
+    var msg = reason ? (reason.message || String(reason)) : '未知 Promise 错误';
+    showError('Promise 异常', msg);
+  });
+
+  // 拦截静态资源(script/link/img)加载失败
+  window.addEventListener('error', function(e) {
+    if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK' || e.target.tagName === 'IMG')) {
+      var src = e.target.src || e.target.href;
+      showError('资源加载失败', '文件: ' + src);
+    }
+  }, true);
+
+  // 强制清理可能卡死的旧 Service Worker 缓存
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      if (regs.length > 0) {
+        Promise.all(regs.map(function(r) { return r.unregister(); })).then(function() {
+          console.log('已清理旧的 Service Worker');
+        });
+      }
+    });
+  }
+})();
+</script>
+<!-- ================= 错误捕获结束 ================= -->
+
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./icon.svg">
 
