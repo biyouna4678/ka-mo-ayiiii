@@ -1,5 +1,5 @@
 import {
-  projects, createProject, setCurrentProject, saveNow,
+  projects, currentProjectId, createProject, setCurrentProject, saveNow,
   loadFromStorage, cleanupExpired
 } from './core/store.js';
 import { showToast } from './core/utils.js';
@@ -24,7 +24,7 @@ import {
 } from './features/import.js';
 import { exportProjectZipById } from './features/export.js';
 
-// 副作用模块：一旦 import 即完成 UI 事件绑定
+/* 副作用模块：一旦 import 即完成自身 UI 事件绑定 */
 import './editor/editor-view.js';
 import './features/preview.js';
 import './features/settings.js';
@@ -35,7 +35,7 @@ import './features/find.js';
 import './features/stats.js';
 import './features/regex.js';
 
-/* ============ 组合工具函数 ============ */
+/* ============ 组合函数 ============ */
 function startImportForProject(projectId) {
   setPendingImportProject(projectId);
   triggerImport('files');
@@ -68,10 +68,7 @@ initContextMenus({
   deleteFileFromProject,
   saveNow,
   updateStatusLang,
-  getCurrentProjectId: () => {
-    // live binding 读当前项目 id
-    return document.getElementById('editorTitle') ? null : null;
-  }
+  getCurrentProjectId: () => currentProjectId
 });
 
 initProjects({ renderProjects });
