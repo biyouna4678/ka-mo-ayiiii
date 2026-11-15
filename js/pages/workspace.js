@@ -40,10 +40,14 @@ function updateCarouselCenter() {
       scrolling = true;
     }
   });
-  setTimeout(updateCarouselCenter, 50);
-  setTimeout(updateCarouselCenter, 200);
-  setTimeout(updateCarouselCenter, 600);
-  window.addEventListener('load', () => setTimeout(updateCarouselCenter, 50));
+  
+  // 使用 ResizeObserver 监听容器尺寸变化，比 setTimeout 更可靠
+  if (window.ResizeObserver) {
+    new ResizeObserver(() => updateCarouselCenter()).observe(carouselContainer);
+  }
+  setTimeout(updateCarouselCenter, 100);
+  setTimeout(updateCarouselCenter, 500);
+  window.addEventListener('load', () => setTimeout(updateCarouselCenter, 100));
 })();
 
 /* ============ 项目列表 ============ */
