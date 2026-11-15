@@ -9,75 +9,6 @@
 <meta name="apple-mobile-web-app-title" content="CodeView">
 <title>代码预览编辑器</title>
 
-<!-- ================= 移动端可视化错误捕获面板 ================= -->
-<style>
-  #__debug_overlay {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    max-height: 40vh; overflow-y: auto;
-    background: rgba(220, 38, 38, 0.95); color: #fff;
-    z-index: 999999; font-family: ui-monospace, monospace; font-size: 12px;
-    padding: 12px; display: none; padding-bottom: calc(12px + env(safe-area-inset-bottom));
-    box-shadow: 0 -4px 12px rgba(0,0,0,0.2);
-  }
-  #__debug_overlay .dbg-item {
-    margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.3);
-    word-break: break-all;
-  }
-  #__debug_overlay .dbg-title { font-weight: bold; color: #fca5a5; margin-bottom: 2px; }
-</style>
-<script>
-(function() {
-  // 创建错误展示面板
-  var errBox = document.createElement('div');
-  errBox.id = '__debug_overlay';
-  document.documentElement.appendChild(errBox);
-  
-  function showError(title, msg) {
-    errBox.style.display = 'block';
-    var item = document.createElement('div');
-    item.className = 'dbg-item';
-    item.innerHTML = '<div class="dbg-title">' + title + '</div>' + msg;
-    errBox.appendChild(item);
-  }
-
-  // 拦截 JS 运行错误
-  window.onerror = function(msg, url, line, col, error) {
-    if (msg === 'Script error.') {
-      showError('跨域脚本错误', '可能由于 CDN 被拦截或跨域问题导致。请检查网络。');
-    } else {
-      showError('运行错误', msg + '<br>位置: ' + (url || '未知').split('/').pop() + ' : 第 ' + line + ' 行');
-    }
-  };
-
-  // 拦截 Promise 异常（针对 ES Module 加载失败）
-  window.addEventListener('unhandledrejection', function(e) {
-    var reason = e.reason;
-    var msg = reason ? (reason.message || String(reason)) : '未知 Promise 错误';
-    showError('Promise 异常', msg);
-  });
-
-  // 拦截静态资源(script/link/img)加载失败
-  window.addEventListener('error', function(e) {
-    if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK' || e.target.tagName === 'IMG')) {
-      var src = e.target.src || e.target.href;
-      showError('资源加载失败', '文件: ' + src);
-    }
-  }, true);
-
-  // 强制清理可能卡死的旧 Service Worker 缓存
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function(regs) {
-      if (regs.length > 0) {
-        Promise.all(regs.map(function(r) { return r.unregister(); })).then(function() {
-          console.log('已清理旧的 Service Worker');
-        });
-      }
-    });
-  }
-})();
-</script>
-<!-- ================= 错误捕获结束 ================= -->
-
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./icon.svg">
 
@@ -88,6 +19,34 @@
 <link rel="stylesheet" href="./css/preview.css">
 <link rel="stylesheet" href="./css/menus.css">
 <link rel="stylesheet" href="./css/dialogs.css">
+
+<!-- ================= 详细报错捕获 ================= -->
+<script>
+  // 移动端没有控制台，用弹窗直接查看错误
+  window.addEventListener('error', function(e) {
+    // 资源加载错误（如图片、JS文件 404 或网络超时）
+    if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK' || e.target.tagName === 'IMG')) {
+      var src = e.target.src || e.target.href;
+      // 忽略一些不重要的图片报错
+      if (src && src.indexOf('http') === 0 && src.indexOf(location.hostname) === -1) return;
+      
+      alert('❌ 资源加载失败:\n' + src + '\n\n可能原因：\n1. 文件路径拼写错误（区分大小写）\n2. 文件没有上传到 GitHub\n3. 网络无法访问该 CDN');
+      return;
+    }
+    // 普通的 JS 运行错误
+    alert('❌ 运行错误:\n' + e.message + '\n\n位置: ' + e.filename + ':' + e.lineno);
+  }, true); // 开启捕获阶段，才能捕获资源加载失败
+
+  // Promise 内部报错（ES Module 加载失败经常走这里）
+  window.addEventListener('unhandledrejection', function(e) {
+    var msg = e.reason;
+    if (msg instanceof Error) {
+      alert('❌ Promise 异常 (常见于模块加载):\n' + msg.message + '\n\n检查是否路径拼写错误或网络原因。');
+    } else {
+      alert('❌ 异步异常:\n' + msg);
+    }
+  });
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
@@ -134,8 +93,7 @@
     <button class="ws-new-project" id="newProjectBtn">创建新项目</button>
     <div class="ws-import-actions">
       <button class="ws-import-card" id="importFileBtn" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
           <polyline points="14 3 14 9 20 9"/>
           <path d="M12 12v6"/>
@@ -144,8 +102,7 @@
         <span class="import-label">导入文件</span>
       </button>
       <button class="ws-import-card" id="importFolderBtn" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
           <path d="M12 11v6"/>
           <polyline points="9 14 12 17 15 14"/>
@@ -159,8 +116,7 @@
     <div class="ws-section-header" id="wsSectionHeader">
       <div class="ws-section-title">我的项目</div>
       <button class="ws-trash-btn" id="openTrashBtn" aria-label="回收站">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="3 6 5 6 21 6"/>
           <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
           <path d="M10 11v6"/>
@@ -177,8 +133,7 @@
 <div class="page page-trash" id="pageTrash">
   <header class="trash-header">
     <button class="back-btn" id="trashBackBtn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="15 18 9 12 15 6"/>
       </svg>
     </button>
@@ -202,8 +157,7 @@
 <div class="page page-editor" id="pageEditor">
   <header class="editor-header">
     <button class="icon-btn" id="backBtn" aria-label="返回">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
         <line x1="19" y1="12" x2="5" y2="12"/>
         <polyline points="12 5 5 12 12 19"/>
       </svg>
@@ -213,16 +167,14 @@
   </header>
   <div class="editor-toolbar">
     <button class="tool-btn active" data-tool="code" aria-label="代码">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="8 7 3 12 8 17"/>
         <polyline points="16 7 21 12 16 17"/>
         <line x1="14" y1="5" x2="10" y2="19"/>
       </svg>
     </button>
     <button class="tool-btn" data-tool="preview" aria-label="预览">
-      <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor"
-           stroke-width="2.4" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round">
         <polygon points="7 5 19 12 7 19"/>
       </svg>
     </button>
@@ -234,8 +186,7 @@
       </svg>
     </button>
     <button class="tool-btn" data-tool="export" aria-label="导出">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
         <line x1="12" y1="4" x2="12" y2="15"/>
         <polyline points="6 9 12 15 18 9"/>
         <line x1="5" y1="20" x2="19" y2="20"/>
@@ -259,16 +210,14 @@
 <div class="page page-preview preview-page" id="pagePreview">
   <header class="preview-header" id="previewHeader">
     <button class="icon-btn" id="previewReloadBtn" aria-label="重新渲染">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
         <path d="M21 3v5h-5"/>
       </svg>
     </button>
     <div class="preview-title" id="previewTitle">index.html</div>
     <button class="icon-btn" id="previewMenuBtn" aria-label="菜单">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="6" r="1.4" fill="currentColor"/>
         <circle cx="12" cy="12" r="1.4" fill="currentColor"/>
         <circle cx="12" cy="18" r="1.4" fill="currentColor"/>
@@ -279,8 +228,7 @@
     <iframe id="previewFrame" title="预览"></iframe>
   </div>
   <button class="fullscreen-exit" id="fullscreenExit" aria-label="退出全屏">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="9 3 9 9 3 9"/>
       <polyline points="15 21 15 15 21 15"/>
       <line x1="9" y1="9" x2="3" y2="3"/>
@@ -293,16 +241,14 @@
         <div class="menu-group">
           <button class="menu-item" data-action="exit">
             <span class="label">退出预览</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="19" y1="12" x2="5" y2="12"/>
               <polyline points="12 5 5 12 12 19"/>
             </svg>
           </button>
           <button class="menu-item" data-action="fullscreen">
             <span class="label">全屏</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="15 3 21 3 21 9"/>
               <polyline points="9 21 3 21 3 15"/>
               <line x1="21" y1="3" x2="14" y2="10"/>
@@ -311,8 +257,7 @@
           </button>
           <button class="menu-item" data-submenu="capture">
             <span class="label">截屏</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M5 7h3l1.5-2.5h5L16 7h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/>
               <circle cx="12" cy="13" r="3.4"/>
             </svg>
@@ -321,16 +266,14 @@
         <div class="menu-group">
           <button class="menu-item" data-submenu="appearance">
             <span class="label">外观</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="9"/>
               <path d="M12 3 a9 9 0 0 1 0 18 z" fill="currentColor" stroke="none"/>
             </svg>
           </button>
           <button class="menu-item" data-submenu="zoom">
             <span class="label">缩放</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="10.5" cy="10.5" r="6.5"/>
               <line x1="15.5" y1="15.5" x2="21" y2="21"/>
               <line x1="7.5" y1="10.5" x2="13.5" y2="10.5"/>
@@ -342,8 +285,7 @@
       <div class="menu-panel" data-panel="capture" hidden>
         <div class="menu-group">
           <button class="menu-item menu-back" data-back>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
               <line x1="19" y1="12" x2="5" y2="12"/>
               <polyline points="12 5 5 12 12 19"/>
             </svg>
@@ -358,8 +300,7 @@
       <div class="menu-panel" data-panel="appearance" hidden>
         <div class="menu-group">
           <button class="menu-item menu-back" data-back>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
               <line x1="19" y1="12" x2="5" y2="12"/>
               <polyline points="12 5 5 12 12 19"/>
             </svg>
@@ -375,8 +316,7 @@
       <div class="menu-panel" data-panel="zoom" hidden>
         <div class="menu-group">
           <button class="menu-item menu-back" data-back>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
               <line x1="19" y1="12" x2="5" y2="12"/>
               <polyline points="12 5 5 12 12 19"/>
             </svg>
@@ -416,8 +356,7 @@
     <div class="menu-panel" data-panel="toolbox" hidden>
       <div class="menu-group">
         <button class="menu-item menu-back" data-back>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/>
             <polyline points="12 5 5 12 12 19"/>
           </svg>
@@ -435,8 +374,7 @@
     <div class="menu-panel" data-panel="encoding" hidden>
       <div class="menu-group">
         <button class="menu-item menu-back" data-back>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/>
             <polyline points="12 5 5 12 12 19"/>
           </svg>
@@ -505,8 +443,7 @@
 <div class="newfile-mask" id="newfileMask">
   <div class="nf-header">
     <button class="nf-close" id="nfClose" aria-label="关闭">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
         <line x1="6" y1="6" x2="18" y2="18"/>
         <line x1="18" y1="6" x2="6" y2="18"/>
       </svg>
@@ -517,20 +454,17 @@
   <div class="nf-body">
     <div class="nf-input-row">
       <div class="nf-input-icon" id="nfInputIcon"></div>
-      <input class="nf-input" id="nfInput" placeholder="文件名"
-             autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" />
+      <input class="nf-input" id="nfInput" placeholder="文件名" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" />
       <button class="nf-ext-btn" id="nfExtBtn">
         <span id="nfExtText">.html</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="6 15 12 9 18 15"/>
           <polyline points="6 9 12 3 18 9" transform="translate(0 6)"/>
         </svg>
       </button>
     </div>
     <div class="nf-hint">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
       </svg>
       <span>保存在 <strong id="nfProjectName">—</strong> 中</span>
@@ -616,8 +550,7 @@
     <div class="modal-body">
       <div class="modal-title" id="modalTitle">创建新项目</div>
       <div class="modal-desc" id="modalDesc">输入您的项目的名称。</div>
-      <input class="modal-input" id="projectNameInput" type="text" placeholder="My Project"
-             autocomplete="off" autocapitalize="off" spellcheck="false" />
+      <input class="modal-input" id="projectNameInput" type="text" placeholder="My Project" autocomplete="off" autocapitalize="off" spellcheck="false" />
     </div>
     <div class="modal-actions">
       <button class="modal-btn" id="cancelBtn">取消</button>
