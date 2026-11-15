@@ -7,7 +7,7 @@ import { setOnShowWorkspace } from './ui/pages.js';
 import { openModal } from './ui/overlays.js';
 import { enterEditor, openFileInProject, updateStatusLang } from './editor/editor-state.js';
 import { renderProjects, initWorkspace } from './pages/workspace.js';
-import { initTrash } from './pages/trash.js';
+// 👇 移除了 initTrash 的导入，因为它在自己文件里已经处理好了
 import {
   initProjects, duplicateProject, togglePinProject, confirmDeleteProject
 } from './features/projects.js';
@@ -34,6 +34,7 @@ import './features/toolbox.js';
 import './features/find.js';
 import './features/stats.js';
 import './features/regex.js';
+import './pages/trash.js'; // 👈 确保这里引入了 trash.js 以便它自身执行事件绑定
 
 /* ============ 组合函数 ============ */
 function startImportForProject(projectId) {
@@ -74,7 +75,7 @@ initContextMenus({
 initProjects({ renderProjects });
 initFiles({ renderProjects });
 initImport({ renderProjects });
-initTrash();
+// 👇 移除了 initTrash() 的调用
 
 setOnShowWorkspace(renderProjects);
 
