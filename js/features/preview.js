@@ -69,55 +69,88 @@ document.getElementById('previewReloadBtn').addEventListener('click', () => {
   renderPreview(true);
 });
 
+/* ============ 截屏逻辑（html2canvas版） ============ */
 async function capturePreview(mode) {
-  if (typeof htmlToImage === 'undefined') { alert('截屏库未加载'); return; }
-  const doc = previewFrame.contentDocument;
-  if (!doc || !doc.body) return;
+  if (typeof html2canvas === 'undefined') { 
+    alert('截屏库未加载，请检查网络'); 
+    return; 
+  }
   
+  const doc = previewFrame.contentDocument;
+  if (!doc || !doc.body) {
+    alert('预览页面尚未准备好');
+    return;
+  }
+
+  showToast('正在生成截图…', 0);
   const vw = previewFrame.clientWidth;
   const vh = previewFrame.clientHeight;
   
   const options = {
-    quality: 0.95,
+    useCORS: true,       // 允许跨域图片
+    allowTaint: true,    // 允许污染画布（避免部分图片报错）
     backgroundColor: currentAppearance === 'dark' ? '#111' : (currentAppearance === 'gray' ? '#f0f0f0' : '#ffffff'),
-    // 关键设置：确保捕获整个宽度/高度
-    width: mode === 'viewport' ? vw : Math.max(doc.documentElement.scrollWidth, vw),
-    height: mode === 'viewport' ? vh : Math.max(doc.documentElement.scrollHeight, vh)
+    logging: false,
+    scale: window.devicePixelRatio || 1, // 适配高清屏，比强制2倍更稳
   };
 
-  showToast('正在生成高清截图…', 0);
+  if (mode === 'viewport') {
+    options.width = vw; 
+    options.height = vh;
+    options.windowWidth = vw; 
+    options.windowHeight = vh;
+    options.x = doc.documentElement.scrollLeft || 0;
+    options.y = doc.documentElement.scrollTop || 0;
+  } else {
+    // 整页模式
+    options.width = Math.max(doc.documentElement.scrollWidth, vw);
+    options.height = Math.max(doc.documentElement.scrollHeight, vh);
+    options.windowWidth = options.width;
+    options.windowHeight = options.height;
+  }
+
+  // 加入 8 秒超时机制，防止因为外链图片加载慢而永久卡死
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('生成超时，页面可能包含无法加载的外链资源')), 8000);
+  });
 
   try {
-    // 使用 html-to-image 替换 html2canvas
-    const blob = await htmlToImage.toBlob(doc.body, options);
-    if (!blob) {
-      showToast('截屏失败，无法生成图片');
-      return;
-    }
-    
-    const file = new File([blob], 'preview.png', { type: 'image/png' });
-    
-    // 尝试调用系统分享（最适配手机端）
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { 
-        await navigator.share({ files: [file], title: '预览截图' }); 
-        showToast('已分享');
-        return; 
-      } catch (e) {
-        // 如果用户取消了分享，或者系统不支持，就降级为下载
+    // 竞速：要么截图成功，要么超时失败
+    const canvas = await Promise.race([
+      html2canvas(doc.body, options),
+      timeoutPromise
+    ]);
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        alert('截屏失败：无法生成图片');
+        return;
       }
-    }
-    
-    // 下载逻辑
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'preview-' + Date.now() + '.png';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-    showToast('已保存截图');
+      const file = new File([blob], 'preview.png', { type: 'image/png' });
+      
+      // 优先尝试系统分享
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { 
+          await navigator.share({ files: [file], title: '预览截图' }); 
+          showToast('已分享');
+          return; 
+        } catch (e) {
+          // 用户取消分享则往下走保存逻辑
+        }
+      }
+      
+      // 降级为下载
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'preview-' + Date.now() + '.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      showToast('已保存截图');
+    }, 'image/png');
+
   } catch (err) {
     console.error(err);
-    showToast('截屏失败：' + err.message, 2600);
+    alert('截图中断：' + err.message);
   }
 }
 
