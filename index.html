@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="CodeView">
+<title>代码预览编辑器</title>
+
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon.svg">
+
+<link rel="stylesheet" href="./css/base.css">
+<link rel="stylesheet" href="./css/workspace.css">
+<link rel="stylesheet" href="./css/trash.css">
+<link rel="stylesheet" href="./css/editor.css">
+<link rel="stylesheet" href="./css/preview.css">
+<link rel="stylesheet" href="./css/menus.css">
+<link rel="stylesheet" href="./css/dialogs.css">
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+
+<!-- ================= 工作区 ================= -->
+<div class="page page-workspace active" id="pageWorkspace">
+  <div class="ws-hero">
+    <header class="ws-header">
+      <div class="title">代码预览编辑器</div>
+      <div class="subtitle">─ Code preview editor ─</div>
+    </header>
+    <div class="ws-carousel-wrap">
+      <div class="ws-carousel" id="wsCarousel">
+        <img class="ws-logo" src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/html5/html5-original.svg" alt="HTML5">
+        <img class="ws-logo" src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/css3/css3-original.svg" alt="CSS3">
+        <svg class="ws-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#f7df1e" d="M71,460 L30,0 481,0 440,460 255,512"/>
+          <path fill="#e8c910" d="M256,472 L405,431 440,37 256,37"/>
+          <g fill="#fff" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="190" text-anchor="middle">
+            <text x="256" y="350" filter="drop-shadow(2px 2px 0px rgba(0,0,0,0.1))">JS</text>
+          </g>
+        </svg>
+        <svg class="ws-logo" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="20" width="120" height="120" rx="22" fill="#E34F26" />
+          <text x="80" y="82" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="34" fill="#fff" text-anchor="middle" dominant-baseline="middle" letter-spacing="-1">HTML</text>
+        </svg>
+        <svg class="ws-logo" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="20" width="120" height="120" rx="22" fill="#663399" />
+          <text x="80" y="82" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="44" fill="#fff" text-anchor="middle" dominant-baseline="middle">CSS</text>
+        </svg>
+        <svg class="ws-logo" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="20" width="120" height="120" rx="22" fill="#F7DF1E" />
+          <text x="80" y="82" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="48" fill="#222" text-anchor="middle" dominant-baseline="middle">JS</text>
+        </svg>
+        <img class="ws-logo" src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/html5/html5-original.svg" alt="HTML5">
+        <img class="ws-logo" src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/css3/css3-original.svg" alt="CSS3">
+        <svg class="ws-logo" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="20" width="120" height="120" rx="22" fill="#E34F26" />
+          <text x="80" y="82" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="34" fill="#fff" text-anchor="middle" dominant-baseline="middle" letter-spacing="-1">HTML</text>
+        </svg>
+      </div>
+    </div>
+    <button class="ws-new-project" id="newProjectBtn">创建新项目</button>
+    <div class="ws-import-actions">
+      <button class="ws-import-card" id="importFileBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+          <polyline points="14 3 14 9 20 9"/>
+          <path d="M12 12v6"/>
+          <polyline points="9 15 12 18 15 15"/>
+        </svg>
+        <span class="import-label">导入文件</span>
+      </button>
+      <button class="ws-import-card" id="importFolderBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          <path d="M12 11v6"/>
+          <polyline points="9 14 12 17 15 14"/>
+        </svg>
+        <span class="import-label">导入文件夹</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="ws-projects">
+    <div class="ws-section-header" id="wsSectionHeader">
+      <div class="ws-section-title">我的项目</div>
+      <button class="ws-trash-btn" id="openTrashBtn" aria-label="回收站">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6"/>
+          <path d="M14 11v6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+      </button>
+    </div>
+    <div class="projects-list" id="projectsList"></div>
+  </div>
+</div>
+
+<!-- ================= 回收站页 ================= -->
+<div class="page page-trash" id="pageTrash">
+  <header class="trash-header">
+    <button class="back-btn" id="trashBackBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+    <div class="trash-title">回收站</div>
+    <button class="trash-select-btn" id="trashSelectBtn">选择</button>
+  </header>
+  <div class="trash-body" id="trashBody">
+    <div class="trash-list-header">
+      <div class="label">项目</div>
+      <div class="trash-count" id="trashCount">0</div>
+    </div>
+    <div class="trash-list" id="trashList"></div>
+  </div>
+  <div class="trash-action-bar" id="trashActionBar">
+    <button class="trash-action-btn" id="trashRestoreBtn" disabled>恢复</button>
+    <button class="trash-action-btn danger" id="trashDeleteBtn" disabled>永久删除</button>
+  </div>
+</div>
+
+<!-- ================= 编辑器 ================= -->
+<div class="page page-editor" id="pageEditor">
+  <header class="editor-header">
+    <button class="icon-btn" id="backBtn" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 5 5 12 12 19"/>
+      </svg>
+    </button>
+    <div class="editor-title" id="editorTitle">My Project</div>
+    <div class="icon-btn placeholder"></div>
+  </header>
+  <div class="editor-toolbar">
+    <button class="tool-btn active" data-tool="code" aria-label="代码">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="8 7 3 12 8 17"/>
+        <polyline points="16 7 21 12 16 17"/>
+        <line x1="14" y1="5" x2="10" y2="19"/>
+      </svg>
+    </button>
+    <button class="tool-btn" data-tool="preview" aria-label="预览">
+      <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor"
+           stroke-width="2.4" stroke-linejoin="round">
+        <polygon points="7 5 19 12 7 19"/>
+      </svg>
+    </button>
+    <button class="tool-btn" data-tool="more" aria-label="更多">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="5" cy="12" r="2.2"/>
+        <circle cx="12" cy="12" r="2.2"/>
+        <circle cx="19" cy="12" r="2.2"/>
+      </svg>
+    </button>
+    <button class="tool-btn" data-tool="export" aria-label="导出">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="4" x2="12" y2="15"/>
+        <polyline points="6 9 12 15 18 9"/>
+        <line x1="5" y1="20" x2="19" y2="20"/>
+      </svg>
+    </button>
+  </div>
+  <div class="editor-tabs" id="editorTabs">
+    <div class="editor-tab active"><span id="tabName">index.html</span></div>
+  </div>
+  <div class="editor-code">
+    <div id="editorContainer"><div class="editor-loading">编辑器加载中…</div></div>
+  </div>
+  <div class="symbol-bar" id="symbolBar"></div>
+  <div class="status-bar">
+    <span id="statusLang">HTML</span>
+    <span id="statusPos">行 1, 列 1</span>
+  </div>
+</div>
+
+<!-- ================= 预览页 ================= -->
+<div class="page page-preview preview-page" id="pagePreview">
+  <header class="preview-header" id="previewHeader">
+    <button class="icon-btn" id="previewReloadBtn" aria-label="重新渲染">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+        <path d="M21 3v5h-5"/>
+      </svg>
+    </button>
+    <div class="preview-title" id="previewTitle">index.html</div>
+    <button class="icon-btn" id="previewMenuBtn" aria-label="菜单">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="6" r="1.4" fill="currentColor"/>
+        <circle cx="12" cy="12" r="1.4" fill="currentColor"/>
+        <circle cx="12" cy="18" r="1.4" fill="currentColor"/>
+      </svg>
+    </button>
+  </header>
+  <div class="preview-body" id="previewBody">
+    <iframe id="previewFrame" title="预览"></iframe>
+  </div>
+  <button class="fullscreen-exit" id="fullscreenExit" aria-label="退出全屏">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 3 9 9 3 9"/>
+      <polyline points="15 21 15 15 21 15"/>
+      <line x1="9" y1="9" x2="3" y2="3"/>
+      <line x1="21" y1="21" x2="15" y2="15"/>
+    </svg>
+  </button>
+  <div class="popup-mask" id="previewMenuMask">
+    <div class="popup-menu" id="previewMenu">
+      <div class="menu-panel" data-panel="main">
+        <div class="menu-group">
+          <button class="menu-item" data-action="exit">
+            <span class="label">退出预览</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 5 5 12 12 19"/>
+            </svg>
+          </button>
+          <button class="menu-item" data-action="fullscreen">
+            <span class="label">全屏</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 3 21 3 21 9"/>
+              <polyline points="9 21 3 21 3 15"/>
+              <line x1="21" y1="3" x2="14" y2="10"/>
+              <line x1="3" y1="21" x2="10" y2="14"/>
+            </svg>
+          </button>
+          <button class="menu-item" data-submenu="capture">
+            <span class="label">截屏</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 7h3l1.5-2.5h5L16 7h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/>
+              <circle cx="12" cy="13" r="3.4"/>
+            </svg>
+          </button>
+        </div>
+        <div class="menu-group">
+          <button class="menu-item" data-submenu="appearance">
+            <span class="label">外观</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M12 3 a9 9 0 0 1 0 18 z" fill="currentColor" stroke="none"/>
+            </svg>
+          </button>
+          <button class="menu-item" data-submenu="zoom">
+            <span class="label">缩放</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="10.5" cy="10.5" r="6.5"/>
+              <line x1="15.5" y1="15.5" x2="21" y2="21"/>
+              <line x1="7.5" y1="10.5" x2="13.5" y2="10.5"/>
+              <line x1="10.5" y1="7.5" x2="10.5" y2="13.5"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="menu-panel" data-panel="capture" hidden>
+        <div class="menu-group">
+          <button class="menu-item menu-back" data-back>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 5 5 12 12 19"/>
+            </svg>
+            <span class="label">返回</span>
+          </button>
+        </div>
+        <div class="menu-group">
+          <button class="menu-item" data-action="capture-viewport"><span class="label">可视区域</span></button>
+          <button class="menu-item" data-action="capture-full"><span class="label">整页</span></button>
+        </div>
+      </div>
+      <div class="menu-panel" data-panel="appearance" hidden>
+        <div class="menu-group">
+          <button class="menu-item menu-back" data-back>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 5 5 12 12 19"/>
+            </svg>
+            <span class="label">返回</span>
+          </button>
+        </div>
+        <div class="menu-group">
+          <button class="menu-item" data-appearance="white"><span class="check"></span><span class="label">白色</span></button>
+          <button class="menu-item" data-appearance="dark"><span class="check"></span><span class="label">深色</span></button>
+          <button class="menu-item" data-appearance="gray"><span class="check"></span><span class="label">灰色</span></button>
+        </div>
+      </div>
+      <div class="menu-panel" data-panel="zoom" hidden>
+        <div class="menu-group">
+          <button class="menu-item menu-back" data-back>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 5 5 12 12 19"/>
+            </svg>
+            <span class="label">返回</span>
+          </button>
+        </div>
+        <div class="menu-group">
+          <button class="menu-item" data-zoom="0.25"><span class="check"></span><span class="label">25%</span></button>
+          <button class="menu-item" data-zoom="0.5"><span class="check"></span><span class="label">50%</span></button>
+          <button class="menu-item" data-zoom="0.75"><span class="check"></span><span class="label">75%</span></button>
+          <button class="menu-item" data-zoom="1"><span class="check"></span><span class="label">100%</span></button>
+          <button class="menu-item" data-zoom="1.25"><span class="check"></span><span class="label">125%</span></button>
+          <button class="menu-item" data-zoom="1.5"><span class="check"></span><span class="label">150%</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 编辑器更多菜单 -->
+<div class="popup-mask" id="editorMenuMask">
+  <div class="popup-menu" id="editorMenu">
+    <div class="menu-panel" data-panel="main">
+      <div class="menu-group">
+        <button class="menu-item" data-action="find"><span class="label">查找和替换</span></button>
+        <button class="menu-item" data-action="format"><span class="label">格式化文档</span></button>
+        <button class="menu-item" data-action="selectall"><span class="label">选择全部</span></button>
+        <button class="menu-item" data-action="copyall"><span class="label">复制全部</span></button>
+      </div>
+      <div class="menu-group">
+        <button class="menu-item" data-submenu="toolbox"><span class="label">工具箱</span><span class="chev">›</span></button>
+      </div>
+      <div class="menu-group">
+        <button class="menu-item" data-action="settings"><span class="label">编辑器设置</span></button>
+      </div>
+    </div>
+    <div class="menu-panel" data-panel="toolbox" hidden>
+      <div class="menu-group">
+        <button class="menu-item menu-back" data-back>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 5 5 12 12 19"/>
+          </svg>
+          <span class="label">返回</span>
+        </button>
+      </div>
+      <div class="menu-group">
+        <button class="menu-item" data-submenu="encoding"><span class="label">编码 / 解码</span><span class="chev">›</span></button>
+        <button class="menu-item" data-action="optimize-svg"><span class="label">优化 SVG</span></button>
+        <button class="menu-item" data-action="inline-image"><span class="label">图片转 Base64</span></button>
+        <button class="menu-item" data-action="stats"><span class="label">文档统计</span></button>
+        <button class="menu-item" data-action="regex"><span class="label">正则测试</span></button>
+      </div>
+    </div>
+    <div class="menu-panel" data-panel="encoding" hidden>
+      <div class="menu-group">
+        <button class="menu-item menu-back" data-back>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 5 5 12 12 19"/>
+          </svg>
+          <span class="label">返回</span>
+        </button>
+      </div>
+      <div class="menu-group">
+        <div class="menu-section-label">HTML 实体</div>
+        <button class="menu-item" data-enc="html-encode"><span class="label">编码</span></button>
+        <button class="menu-item" data-enc="html-decode"><span class="label">解码</span></button>
+      </div>
+      <div class="menu-group">
+        <div class="menu-section-label">URL</div>
+        <button class="menu-item" data-enc="url-encode"><span class="label">编码</span></button>
+        <button class="menu-item" data-enc="url-decode"><span class="label">解码</span></button>
+      </div>
+      <div class="menu-group">
+        <div class="menu-section-label">Base64</div>
+        <button class="menu-item" data-enc="b64-encode"><span class="label">编码</span></button>
+        <button class="menu-item" data-enc="b64-decode"><span class="label">解码</span></button>
+      </div>
+      <div class="menu-group">
+        <div class="menu-section-label">JSON 字符串</div>
+        <button class="menu-item" data-enc="json-encode"><span class="label">转义</span></button>
+        <button class="menu-item" data-enc="json-decode"><span class="label">反转义</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 上下文菜单 -->
+<div class="ctx-mask" id="ctxMask">
+  <div class="ctx-menu" id="ctxMenu"></div>
+</div>
+
+<!-- 项目选择器 -->
+<div class="sheet-mask" id="projectPickerSheet">
+  <div class="sheet">
+    <div class="sheet-header">
+      <div class="sheet-title" id="projectPickerTitle">移动到</div>
+      <button class="sheet-close" id="projectPickerClose">取消</button>
+    </div>
+    <div class="sheet-body" style="padding: 0;">
+      <div id="projectPickerList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 文件信息面板 -->
+<div class="sheet-mask" id="infoSheet">
+  <div class="sheet">
+    <div class="sheet-header">
+      <div class="sheet-title" id="infoTitle">文件信息</div>
+      <button class="sheet-close" data-close>完成</button>
+    </div>
+    <div class="sheet-body">
+      <div class="stat-grid" id="infoGrid"></div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="imageFileInput" accept="image/*" hidden>
+<input type="file" id="importFilesInput" multiple hidden>
+<input type="file" id="importFolderInput" multiple webkitdirectory directory hidden>
+
+<div class="newfile-mask" id="newfileMask">
+  <div class="nf-header">
+    <button class="nf-close" id="nfClose" aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="6" y1="6" x2="18" y2="18"/>
+        <line x1="18" y1="6" x2="6" y2="18"/>
+      </svg>
+    </button>
+    <div class="nf-title">新建文件</div>
+    <div class="nf-spacer"></div>
+  </div>
+  <div class="nf-body">
+    <div class="nf-input-row">
+      <div class="nf-input-icon" id="nfInputIcon"></div>
+      <input class="nf-input" id="nfInput" placeholder="文件名"
+             autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" />
+      <button class="nf-ext-btn" id="nfExtBtn">
+        <span id="nfExtText">.html</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 15 12 9 18 15"/>
+          <polyline points="6 9 12 3 18 9" transform="translate(0 6)"/>
+        </svg>
+      </button>
+    </div>
+    <div class="nf-hint">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+      </svg>
+      <span>保存在 <strong id="nfProjectName">—</strong> 中</span>
+    </div>
+    <button class="nf-create-btn" id="nfCreateBtn" disabled>创建</button>
+  </div>
+</div>
+
+<div class="lang-mask" id="langMask">
+  <div class="lang-sheet">
+    <div class="lang-header">
+      <div class="lang-title">选择语言</div>
+      <button class="lang-close" id="langClose">取消</button>
+    </div>
+    <div class="lang-list" id="langList"></div>
+  </div>
+</div>
+
+<div class="sheet-mask" id="findSheet">
+  <div class="sheet">
+    <div class="sheet-header"><div class="sheet-title">查找和替换</div><button class="sheet-close" data-close>完成</button></div>
+    <div class="sheet-body">
+      <div class="field-row"><input type="text" id="findInput" placeholder="查找内容" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+      <div class="field-row"><input type="text" id="replaceInput" placeholder="替换为" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+      <div class="field-hint" id="findHint">未开始查找</div>
+      <div class="btn-row">
+        <button class="btn-sm" id="findPrevBtn">上一个</button>
+        <button class="btn-sm" id="findNextBtn">下一个</button>
+        <button class="btn-sm" id="replaceBtn">替换</button>
+        <button class="btn-sm primary" id="replaceAllBtn">全部替换</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-mask" id="statsSheet">
+  <div class="sheet">
+    <div class="sheet-header"><div class="sheet-title">文档统计</div><button class="sheet-close" data-close>完成</button></div>
+    <div class="sheet-body"><div class="stat-grid" id="statsGrid"></div></div>
+  </div>
+</div>
+
+<div class="sheet-mask" id="regexSheet">
+  <div class="sheet">
+    <div class="sheet-header"><div class="sheet-title">正则表达式测试</div><button class="sheet-close" data-close>完成</button></div>
+    <div class="sheet-body">
+      <div class="field-row"><input type="text" id="regexPattern" placeholder="正则表达式（不带斜杠）" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+      <div class="field-row"><input type="text" id="regexFlags" placeholder="flags（g i m s u y，可空）" autocapitalize="off" autocorrect="off" spellcheck="false" value="g"></div>
+      <div class="field-hint">测试文本默认取当前编辑器内容</div>
+      <textarea id="regexText" spellcheck="false" autocapitalize="off" autocorrect="off"></textarea>
+      <div class="field-hint" id="regexHint"></div>
+      <div class="regex-result" id="regexResult">等待输入…</div>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-mask" id="settingsSheet">
+  <div class="sheet">
+    <div class="sheet-header"><div class="sheet-title">编辑器设置</div><button class="sheet-close" data-close>完成</button></div>
+    <div class="sheet-body">
+      <div class="setting-line">
+        <span>字号</span>
+        <div class="seg" id="segFontSize">
+          <button data-val="12">12</button>
+          <button data-val="14">14</button>
+          <button data-val="16">16</button>
+          <button data-val="18">18</button>
+        </div>
+      </div>
+      <div class="setting-line">
+        <span>Tab 宽度</span>
+        <div class="seg" id="segTabSize">
+          <button data-val="2">2 空格</button>
+          <button data-val="4">4 空格</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="modalMask">
+  <div class="modal-card">
+    <div class="modal-body">
+      <div class="modal-title" id="modalTitle">创建新项目</div>
+      <div class="modal-desc" id="modalDesc">输入您的项目的名称。</div>
+      <input class="modal-input" id="projectNameInput" type="text" placeholder="My Project"
+             autocomplete="off" autocapitalize="off" spellcheck="false" />
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn" id="cancelBtn">取消</button>
+      <button class="modal-btn" id="createBtn">创建</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="confirmMask">
+  <div class="modal-card">
+    <div class="modal-body">
+      <div class="modal-title" id="confirmTitle">要删除吗？</div>
+      <div class="modal-desc" id="confirmDesc"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn" id="confirmCancel">取消</button>
+      <button class="modal-btn danger" id="confirmOk">删除</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="save-indicator" id="saveIndicator">已保存</div>
+
+<script src="./js/pwa.js"></script>
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>
