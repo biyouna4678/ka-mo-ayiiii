@@ -12,7 +12,7 @@ const fullscreenExit = document.getElementById('fullscreenExit');
 
 let currentAppearance = 'white';
 let currentZoom = 1;
-let lastPreviewKey = null; // 👈 记录上次渲染的代码指纹
+let lastPreviewKey = null;
 
 function renderPreview(force = false) {
   if (!project) return;
@@ -20,17 +20,15 @@ function renderPreview(force = false) {
   const f = getActiveFile();
   if (!f) { showToast('没有可预览的文件'); return; }
 
-  // 👇 生成代码指纹：项目ID + 文件ID + 代码内容
   const previewKey = project.id + '_' + f.id + '_' + f.content;
 
-  // 👇 如果代码没变且不是强制刷新，直接返回，保留 iframe 状态
   if (!force && lastPreviewKey === previewKey) {
     return;
   }
 
   previewTitle.textContent = f.name;
   previewFrame.srcdoc = buildPreviewDocForProject(project, f.name, f.content);
-  lastPreviewKey = previewKey; // 更新指纹
+  lastPreviewKey = previewKey;
 
   previewFrame.onload = () => { 
     applyAppearance(currentAppearance); 
@@ -40,7 +38,7 @@ function renderPreview(force = false) {
 
 export function enterPreview() {
   if (!project) return;
-  renderPreview(false); // 不强制刷新
+  renderPreview(false);
   pagePreview.classList.remove('fullscreen');
   showPage('preview');
 }
@@ -67,48 +65,60 @@ function applyZoom(v) {
 function toggleFullscreen() { pagePreview.classList.toggle('fullscreen'); }
 fullscreenExit.addEventListener('click', () => { pagePreview.classList.remove('fullscreen'); });
 
-// 👇 点击刷新按钮时，强制传 true 重新渲染
 document.getElementById('previewReloadBtn').addEventListener('click', () => {
   renderPreview(true);
 });
 
 async function capturePreview(mode) {
-  if (typeof html2canvas === 'undefined') { alert('截屏库未加载'); return; }
+  if (typeof htmlToImage === 'undefined') { alert('截屏库未加载'); return; }
   const doc = previewFrame.contentDocument;
   if (!doc || !doc.body) return;
+  
   const vw = previewFrame.clientWidth;
   const vh = previewFrame.clientHeight;
+  
   const options = {
-    useCORS: true, allowTaint: true,
-    backgroundColor: currentAppearance === 'dark' ? '#111' : '#fff',
-    logging: false
+    quality: 0.95,
+    backgroundColor: currentAppearance === 'dark' ? '#111' : (currentAppearance === 'gray' ? '#f0f0f0' : '#ffffff'),
+    // 关键设置：确保捕获整个宽度/高度
+    width: mode === 'viewport' ? vw : Math.max(doc.documentElement.scrollWidth, vw),
+    height: mode === 'viewport' ? vh : Math.max(doc.documentElement.scrollHeight, vh)
   };
-  if (mode === 'viewport') {
-    options.width = vw; options.height = vh;
-    options.windowWidth = vw; options.windowHeight = vh;
-    options.x = doc.documentElement.scrollLeft || 0;
-    options.y = doc.documentElement.scrollTop || 0;
-  } else {
-    options.width = Math.max(doc.documentElement.scrollWidth, vw);
-    options.height = Math.max(doc.documentElement.scrollHeight, vh);
-    options.windowWidth = options.width;
-    options.windowHeight = options.height;
-  }
+
+  showToast('正在生成高清截图…', 0);
+
   try {
-    const canvas = await html2canvas(doc.body, options);
-    canvas.toBlob(async (blob) => {
-      if (!blob) return;
-      const file = new File([blob], 'preview.png', { type: 'image/png' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], title: '预览截图' }); return; } catch (e) {}
+    // 使用 html-to-image 替换 html2canvas
+    const blob = await htmlToImage.toBlob(doc.body, options);
+    if (!blob) {
+      showToast('截屏失败，无法生成图片');
+      return;
+    }
+    
+    const file = new File([blob], 'preview.png', { type: 'image/png' });
+    
+    // 尝试调用系统分享（最适配手机端）
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { 
+        await navigator.share({ files: [file], title: '预览截图' }); 
+        showToast('已分享');
+        return; 
+      } catch (e) {
+        // 如果用户取消了分享，或者系统不支持，就降级为下载
       }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'preview-' + Date.now() + '.png';
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-    }, 'image/png');
-  } catch (err) { alert('截屏失败：' + err.message); }
+    }
+    
+    // 下载逻辑
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'preview-' + Date.now() + '.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    showToast('已保存截图');
+  } catch (err) {
+    console.error(err);
+    showToast('截屏失败：' + err.message, 2600);
+  }
 }
 
 /* ============ 预览菜单 ============ */
